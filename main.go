@@ -91,14 +91,14 @@ func addValue(file string, value string, lastN int) error {
 
 	lines = append(lines, value)
 
-	sliceLines, sliceErr := limitSlice(lines, lastN)
-	if sliceErr != nil {
-		panic(sliceErr.Error())
+	lines, err = limitSlice(lines, lastN)
+	if err != nil {
+		panic(err.Error())
 	}
 
-	writeErr := writeLines(file, sliceLines)
-	if writeErr != nil {
-		panic(writeErr.Error())
+	err = writeLines(file, lines)
+	if err != nil {
+		panic(err.Error())
 	}
 	return nil
 }
@@ -118,9 +118,9 @@ func removeValue(file string, value string) error {
 		panic(err.Error())
 	}
 
-	writeErr := writeLines(file, lines)
-	if writeErr != nil {
-		panic(writeErr.Error())
+	err = writeLines(file, lines)
+	if err != nil {
+		panic(err.Error())
 	}
 	return nil
 }
@@ -136,8 +136,13 @@ func clearValues(file string) error {
 	return nil
 }
 
-func listValues(file string) error {
+func listValues(file string, lastN int) error {
 	lines, err := readLines(file, "")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	lines, err = limitSlice(lines, lastN)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -207,7 +212,7 @@ func main() {
 			printUsage()
 			os.Exit(1)
 		}
-		listValues(file)
+		listValues(file, *lastNPtr)
 	default:
 		printUsage()
 		os.Exit(0)
