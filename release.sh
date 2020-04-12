@@ -2,7 +2,7 @@
 
 set -e
 
-version="0.0.2"
+version=$(cat main.go | grep "^const version = " | sed 's/^const version = "//;s/"$//')
 package="histkeep"
 bin="histkeep"
 repo="https://github.com/bbeardsley/histkeep"
