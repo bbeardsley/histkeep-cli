@@ -1,0 +1,217 @@
+package main
+
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"os"
+)
+
+const version = "0.0.1"
+
+func printUsage() {
+	fmt.Fprintln(os.Stderr, "Usage")
+	fmt.Fprintln(os.Stderr, "    histkeep [options] <command> <file> <command arguments...>")
+	fmt.Fprintln(os.Stderr, "Version")
+	fmt.Fprintln(os.Stderr, "    "+version)
+	fmt.Fprintln(os.Stderr, "Options")
+	flag.PrintDefaults()
+	fmt.Fprintln(os.Stderr, "Commands")
+	fmt.Fprintln(os.Stderr, "  help    -> show this help")
+	fmt.Fprintln(os.Stderr, "  version -> print version number and exit")
+	fmt.Fprintln(os.Stderr, "  add     -> add value")
+	fmt.Fprintln(os.Stderr, "  clear   -> clear all values")
+	fmt.Fprintln(os.Stderr, "  list    -> list values")
+	fmt.Fprintln(os.Stderr, "  remove  -> remove value")
+}
+
+func readLines(path string, ignoreValue string) ([]string, error) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return make([]string, 0), nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != ignoreValue && line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines, scanner.Err()
+}
+
+func limitSlice(lines []string, lastN int) ([]string, error) {
+	linesLen := len(lines)
+	if linesLen > lastN {
+		return lines[linesLen-lastN : linesLen], nil
+	}
+	return lines, nil
+}
+
+func writeLines(path string, lines []string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+	for i, line := range lines {
+		if i != len(lines)-1 {
+			fmt.Fprintln(w, line)
+		} else {
+			fmt.Fprint(w, line)
+		}
+	}
+	return w.Flush()
+}
+
+func addValue(file string, value string, lastN int) error {
+	if file == "" {
+		printUsage()
+		os.Exit(1)
+	}
+	if value == "" {
+		printUsage()
+		os.Exit(1)
+	}
+
+	lines, err := readLines(file, value)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	lines = append(lines, value)
+
+	sliceLines, sliceErr := limitSlice(lines, lastN)
+	if sliceErr != nil {
+		panic(sliceErr.Error())
+	}
+
+	writeErr := writeLines(file, sliceLines)
+	if writeErr != nil {
+		panic(writeErr.Error())
+	}
+	return nil
+}
+
+func removeValue(file string, value string) error {
+	if file == "" {
+		printUsage()
+		os.Exit(1)
+	}
+	if value == "" {
+		printUsage()
+		os.Exit(1)
+	}
+
+	lines, err := readLines(file, value)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	writeErr := writeLines(file, lines)
+	if writeErr != nil {
+		panic(writeErr.Error())
+	}
+	return nil
+}
+
+func clearValues(file string) error {
+	if file == "" {
+		printUsage()
+		os.Exit(1)
+	}
+	lines := make([]string, 0)
+
+	writeLines(file, lines)
+	return nil
+}
+
+func listValues(file string) error {
+	lines, err := readLines(file, "")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for i, line := range lines {
+		if i != len(lines)-1 {
+			fmt.Println(line)
+		} else {
+			fmt.Print(line)
+		}
+
+	}
+
+	return nil
+}
+
+func main() {
+	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
+	versionPtr := flag.Bool("version", false, "print version number and exit")
+
+	flag.Parse()
+
+	if *versionPtr {
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
+	command := flag.Arg(0)
+	file := flag.Arg(1)
+	value := flag.Arg(2)
+
+	switch command {
+	case "", "h", "-h", "--h", "/h", "/?", "help", "-help", "--help", "/help":
+		printUsage()
+		os.Exit(1)
+	case "version", "-version", "--version", "/version":
+		fmt.Println(version)
+		os.Exit(0)
+	case "add":
+		if file == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		if value == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		addValue(file, value, *lastNPtr)
+	case "clear":
+		if file == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		clearValues(file)
+	case "remove":
+		if file == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		if value == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		removeValue(file, value)
+	case "list":
+		if file == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		listValues(file)
+	default:
+		printUsage()
+		os.Exit(0)
+	}
+
+	return
+}
