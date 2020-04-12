@@ -163,7 +163,6 @@ func main() {
 		os.Exit(1)
 	case "version", "-version", "--version", "/version":
 		fmt.Println(version)
-		os.Exit(0)
 	case "add":
 		if file == "" {
 			printUsage()
@@ -210,7 +209,6 @@ func main() {
 		}
 	default:
 		printUsage()
-		os.Exit(0)
 	}
 
 	return
