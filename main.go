@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-const version = "0.0.1"
+const version = "0.0.2"
 
 func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage")

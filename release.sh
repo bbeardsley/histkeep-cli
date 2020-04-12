@@ -2,7 +2,7 @@
 
 set -e
 
-version="0.0.1"
+version="0.0.2"
 package="histkeep"
 bin="histkeep"
 repo="https://github.com/bbeardsley/histkeep"
