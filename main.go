@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -75,76 +76,58 @@ func writeLines(path string, lines []string) error {
 }
 
 func addValue(file string, value string, lastN int) error {
-	if file == "" {
-		printUsage()
-		os.Exit(1)
-	}
-	if value == "" {
-		printUsage()
-		os.Exit(1)
-	}
-
 	lines, err := readLines(file, value)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	lines = append(lines, value)
 
 	lines, err = limitSlice(lines, lastN)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	err = writeLines(file, lines)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	return nil
 }
 
 func removeValue(file string, value string) error {
-	if file == "" {
-		printUsage()
-		os.Exit(1)
-	}
-	if value == "" {
-		printUsage()
-		os.Exit(1)
-	}
-
 	lines, err := readLines(file, value)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	err = writeLines(file, lines)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	return nil
 }
 
 func clearValues(file string) error {
-	if file == "" {
-		printUsage()
-		os.Exit(1)
-	}
 	lines := make([]string, 0)
 
-	writeLines(file, lines)
+	err := writeLines(file, lines)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func listValues(file string, lastN int) error {
 	lines, err := readLines(file, "")
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	lines, err = limitSlice(lines, lastN)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	for i, line := range lines {
@@ -190,13 +173,19 @@ func main() {
 			printUsage()
 			os.Exit(1)
 		}
-		addValue(file, value, *lastNPtr)
+		err := addValue(file, value, *lastNPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "clear":
 		if file == "" {
 			printUsage()
 			os.Exit(1)
 		}
-		clearValues(file)
+		err := clearValues(file)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "remove":
 		if file == "" {
 			printUsage()
@@ -206,13 +195,19 @@ func main() {
 			printUsage()
 			os.Exit(1)
 		}
-		removeValue(file, value)
+		err := removeValue(file, value)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "list":
 		if file == "" {
 			printUsage()
 			os.Exit(1)
 		}
-		listValues(file, *lastNPtr)
+		err := listValues(file, *lastNPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 	default:
 		printUsage()
 		os.Exit(0)
