@@ -1,9 +1,11 @@
 # histkeep
-[![MIT License](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 history manager keeps of history of values in a flat file and helps you manage them
 
 ## install
+
 Direct downloads are available through the [releases page](https://github.com/bbeardsley/histkeep/releases/latest).
 
 If you have Go installed on your computer just run `go get`.
@@ -11,6 +13,7 @@ If you have Go installed on your computer just run `go get`.
     go get github.com/bbeardsley/histkeep
 
 ## usage
+
 ```
 Usage
     histkeep [options] <command> <file> <command arguments...>
