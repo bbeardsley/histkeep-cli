@@ -18,12 +18,18 @@ If you have Go installed on your computer just run `go get`.
 Usage
     histkeep [options] <command> <file> <command arguments...>
 Version
-    0.0.1
+    0.0.4
 Options
+  -alfred
+    	output Alfred JSON list
+  -format string
+    	regex format for the values.  Accepts NUMBER and UUID as shortcuts.
   -last int
-        keep the last specified number of values (default 15)
+    	keep the last specified number of values (default 15)
+  -reverse
+    	list values in reverse order
   -version
-        print version number and exit
+    	print version number and exit
 Commands
   help    -> show this help
   version -> print version number and exit
