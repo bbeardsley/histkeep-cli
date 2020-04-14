@@ -2,10 +2,10 @@
 
 set -e
 
-version=$(cat main.go | grep "^const version = " | sed 's/^const version = "//;s/"$//')
+version=$(cat cmd/histkeep/main.go | grep "^const version = " | sed 's/^const version = "//;s/"$//')
 package="histkeep"
 bin="histkeep"
-repo="https://github.com/bbeardsley/histkeep"
+repo="https://github.com/bbeardsley/histkeep-cli"
 
 platforms=(
   "windows/amd64"
@@ -19,6 +19,7 @@ platforms=(
 
 rm -f dist/*
 
+cd cmd/histkeep
 for platform in "${platforms[@]}"
 do
   platform_split=(${platform//\// })
@@ -33,10 +34,11 @@ do
 
   echo "Building for GOOS=$GOOS GOARCH=$GOARCH"
 
-  env GOOS=$GOOS GOARCH=$GOARCH go build -o dist/${BIN} &&
-  zip -q dist/${ZIP} -j dist/${BIN} &&
-  rm dist/${BIN}
+  env GOOS=$GOOS GOARCH=$GOARCH go build -o  ../../dist/${BIN}  &&
+  zip -q ../../dist/${ZIP} -j ../../dist/${BIN} &&
+  rm ../../dist/${BIN}
 done
+cd ../..
 
 DARWIN_AMD64=${package}_v${version}_darwin_amd64.zip
 DARWIN_386=${package}_v${version}_darwin_386.zip
