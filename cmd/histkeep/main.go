@@ -31,12 +31,17 @@ func printUsage() {
 	os.Exit(1)
 }
 
+var alfredVarFlags arrayFlags
+
 func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
 	formatPtr := flag.String("format", "", "regex format for the values.  Accepts NUMBER and UUID as shortcuts.")
 	versionPtr := flag.Bool("version", false, "print version number and exit")
 	alfredPtr := flag.Bool("alfred", false, "output Alfred JSON list")
 	reversePtr := flag.Bool("reverse", false, "list values in reverse order")
+	acopyPtr := flag.String("acopy", "", "text to copy in alfred when item in filter is copied.  {{VALUE}} is replaced with the item value.")
+	aiconPtr := flag.String("aicon", "", "filename of icon to show in alfred for each item in filter. {{VALUE}} is replaced with item value.")
+	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in both name and value.  Parameter can be specified multiple times for multiple variables.")
 
 	flag.Parse()
 
@@ -98,7 +103,7 @@ func main() {
 		}
 
 		if *alfredPtr {
-			listAlfred(lines)
+			listAlfred(lines, *aiconPtr, *acopyPtr, alfredVarFlags)
 		} else {
 			listValues(lines)
 		}
@@ -109,14 +114,38 @@ func main() {
 	return
 }
 
-func listAlfred(values []string) {
+func listAlfred(values []string, iconFilename string, copyText string, alfredVars arrayFlags) {
 	fmt.Println("{\"items\": [")
 	for i, line := range values {
 		if i != 0 {
 			fmt.Print(",")
 		}
-		fmt.Printf("{ \"title\": \"%v\",\"arg\": \"%v\" }", line, line)
-		fmt.Println()
+
+		fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\"", line, line)
+		if iconFilename != "" {
+			fmt.Print(", \"icon\": { \"path\": \"")
+			fmt.Print(strings.Replace(iconFilename, "{{VALUE}}", line, -1))
+			fmt.Print("\"} ")
+		}
+		if copyText != "" {
+			fmt.Print(", \"text\": { \"copy\": \"")
+			fmt.Print(strings.Replace(copyText, "{{VALUE}}", line, -1))
+			fmt.Print("\"} ")
+		}
+		if len(alfredVars) > 0 {
+			fmt.Print(", \"variables\": {")
+			for i, avar := range alfredVars {
+				if i != 0 {
+					fmt.Print(",")
+				}
+				parts := strings.Split(avar, "=")
+				if len(parts) == 2 {
+					fmt.Printf("\"%v\": \"%v\"", strings.Replace(parts[0], "{{VALUE}}", line, -1), strings.Replace(parts[1], "{{VALUE}}", line, -1))
+				}
+			}
+			fmt.Println("}")
+		}
+		fmt.Println("}")
 	}
 	fmt.Println("]}")
 }
@@ -147,6 +176,17 @@ func processedNamedFormats(formatStr string) string {
 	default:
 		return formatStr
 	}
+}
+
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return "my string representation"
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
 }
 
 type stringValue struct {
