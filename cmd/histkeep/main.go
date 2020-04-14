@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/bbeardsley/histkeep"
 )
 
-const version = "0.0.2"
+const version = "0.0.3"
 
 func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage")
@@ -31,6 +32,7 @@ func printUsage() {
 
 func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
+	formatPtr := flag.String("format", "", "regex format for the values.  Accepts NUMBER and UUID as shortcuts.")
 	versionPtr := flag.Bool("version", false, "print version number and exit")
 
 	flag.Parse()
@@ -43,8 +45,7 @@ func main() {
 	command := strings.TrimSpace(flag.Arg(0))
 	file := strings.TrimSpace(flag.Arg(1))
 	value := strings.TrimSpace(flag.Arg(2))
-
-	hist := histkeep.NewHistKeep(file, *lastNPtr)
+	hist := histkeep.NewHistKeep(file, *lastNPtr, buildFormat(*formatPtr))
 
 	switch command {
 	case "", "h", "-h", "--h", "/h", "/?", "help", "-help", "--help", "/help":
@@ -92,4 +93,25 @@ func main() {
 	}
 
 	return
+}
+
+func buildFormat(formatStr string) *regexp.Regexp {
+	format := processedNamedFormats(formatStr)
+	regex, _ := regexp.Compile("^" + format + "$")
+	return regex
+}
+
+func processedNamedFormats(formatStr string) string {
+	var matched bool
+	matched, _ = regexp.MatchString("^NUMBER$", formatStr)
+	if matched {
+		return "\\d+"
+	}
+
+	matched, _ = regexp.MatchString("^UUID$", formatStr)
+	if matched {
+		return "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}"
+	}
+
+	return formatStr
 }

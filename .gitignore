@@ -12,7 +12,5 @@
 *.out
 
 debug
-histkeep
 histkeep-cli
-dist/histkeep.rb
-dist/histkeep*.zip
+dist/*
