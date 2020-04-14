@@ -25,6 +25,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  clear   -> clear all values")
 	fmt.Fprintln(os.Stderr, "  list    -> list values")
 	fmt.Fprintln(os.Stderr, "  remove  -> remove value")
+	os.Exit(1)
 }
 
 func main() {
@@ -47,18 +48,13 @@ func main() {
 	switch command {
 	case "", "h", "-h", "--h", "/h", "/?", "help", "-help", "--help", "/help":
 		printUsage()
-		os.Exit(1)
 	case "version", "-version", "--version", "/version":
 		fmt.Println(version)
 	case "add":
-		if file == "" {
+		if file == "" || value == "" {
 			printUsage()
-			os.Exit(1)
 		}
-		if value == "" {
-			printUsage()
-			os.Exit(1)
-		}
+
 		err := hist.AddValue(value)
 		if err != nil {
 			log.Fatal(err)
@@ -66,21 +62,17 @@ func main() {
 	case "clear":
 		if file == "" {
 			printUsage()
-			os.Exit(1)
 		}
+
 		err := hist.ClearValues()
 		if err != nil {
 			log.Fatal(err)
 		}
 	case "remove":
-		if file == "" {
+		if file == "" || value == "" {
 			printUsage()
-			os.Exit(1)
 		}
-		if value == "" {
-			printUsage()
-			os.Exit(1)
-		}
+
 		err := hist.RemoveValue(value)
 		if err != nil {
 			log.Fatal(err)
@@ -88,8 +80,8 @@ func main() {
 	case "list":
 		if file == "" {
 			printUsage()
-			os.Exit(1)
 		}
+
 		err := hist.ListValues()
 		if err != nil {
 			log.Fatal(err)
