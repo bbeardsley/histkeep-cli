@@ -102,16 +102,12 @@ func buildFormat(formatStr string) *regexp.Regexp {
 }
 
 func processedNamedFormats(formatStr string) string {
-	var matched bool
-	matched, _ = regexp.MatchString("^NUMBER$", formatStr)
-	if matched {
+	switch formatStr {
+	case "NUMBER":
 		return "\\d+"
-	}
-
-	matched, _ = regexp.MatchString("^UUID$", formatStr)
-	if matched {
+	case "UUID":
 		return "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}"
+	default:
+		return formatStr
 	}
-
-	return formatStr
 }
