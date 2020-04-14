@@ -6,12 +6,13 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/bbeardsley/histkeep"
 )
 
-const version = "0.0.3"
+const version = "0.0.4"
 
 func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage")
@@ -34,6 +35,8 @@ func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
 	formatPtr := flag.String("format", "", "regex format for the values.  Accepts NUMBER and UUID as shortcuts.")
 	versionPtr := flag.Bool("version", false, "print version number and exit")
+	alfredPtr := flag.Bool("alfred", false, "output Alfred JSON list")
+	reversePtr := flag.Bool("reverse", false, "list values in reverse order")
 
 	flag.Parse()
 
@@ -45,7 +48,8 @@ func main() {
 	command := strings.TrimSpace(flag.Arg(0))
 	file := strings.TrimSpace(flag.Arg(1))
 	value := strings.TrimSpace(flag.Arg(2))
-	hist := histkeep.NewHistKeep(file, *lastNPtr, buildFormat(*formatPtr))
+	format := buildFormat(*formatPtr)
+	hist := histkeep.NewHistKeep(file, *lastNPtr, format)
 
 	switch command {
 	case "", "h", "-h", "--h", "/h", "/?", "help", "-help", "--help", "/help":
@@ -84,15 +88,46 @@ func main() {
 			printUsage()
 		}
 
-		err := hist.ListValues()
+		lines, err := hist.GetValues()
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		if *reversePtr {
+			lines = reverseValues(lines)
+		}
+
+		if *alfredPtr {
+			listAlfred(lines)
+		} else {
+			listValues(lines)
 		}
 	default:
 		printUsage()
 	}
 
 	return
+}
+
+func listAlfred(values []string) {
+	fmt.Println("{\"items\": [")
+	for i, line := range values {
+		if i != 0 {
+			fmt.Print(",")
+		}
+		fmt.Printf("{ \"title\": \"%v\",\"arg\": \"%v\" }", line, line)
+		fmt.Println()
+	}
+	fmt.Println("]}")
+}
+
+func listValues(values []string) {
+	for i, line := range values {
+		if i != 0 {
+			fmt.Println()
+		}
+		fmt.Print(line)
+	}
 }
 
 func buildFormat(formatStr string) *regexp.Regexp {
@@ -107,7 +142,33 @@ func processedNamedFormats(formatStr string) string {
 		return "\\d+"
 	case "UUID":
 		return "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}"
+	case "":
+		return ".*"
 	default:
 		return formatStr
 	}
+}
+
+type stringValue struct {
+	value string
+	index int
+}
+
+type byIndex []stringValue
+
+func (b byIndex) Len() int           { return len(b) }
+func (b byIndex) Less(i, j int) bool { return b[i].index < b[j].index }
+func (b byIndex) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+
+func reverseValues(values []string) []string {
+	stringValues := make([]stringValue, 0)
+	for i := 0; i < len(values); i++ {
+		stringValues = append(stringValues, stringValue{values[i], i})
+	}
+	sort.Sort(sort.Reverse(byIndex(stringValues)))
+	items := make([]string, 0)
+	for i := 0; i < len(stringValues); i++ {
+		items = append(items, stringValues[i].value)
+	}
+	return items
 }

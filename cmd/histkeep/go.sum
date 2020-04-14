@@ -2,3 +2,5 @@ github.com/bbeardsley/histkeep v0.0.1 h1:Io27oE3jAG2FT/xhhspqzYFm/STvgPD1+d8Q1uw
 github.com/bbeardsley/histkeep v0.0.1/go.mod h1:bYUZoqU122IpvVr8h1H19KkV3MgQ10C9bMNKK6ZP05k=
 github.com/bbeardsley/histkeep v0.0.3 h1:clPq3s1ZuJZFqbiqivklJfnMzpAM7ndahgZjAa7ZEko=
 github.com/bbeardsley/histkeep v0.0.3/go.mod h1:bYUZoqU122IpvVr8h1H19KkV3MgQ10C9bMNKK6ZP05k=
+github.com/bbeardsley/histkeep v0.0.4 h1:4krT+QJ6F3G6nhMWL/aQO9Nq1jWbAmjo1h4W4MlDtHg=
+github.com/bbeardsley/histkeep v0.0.4/go.mod h1:bYUZoqU122IpvVr8h1H19KkV3MgQ10C9bMNKK6ZP05k=
