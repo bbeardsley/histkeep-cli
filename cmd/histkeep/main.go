@@ -32,6 +32,7 @@ func printUsage() {
 }
 
 var alfredVarFlags arrayFlags
+var alfredItemFlags arrayFlags
 
 func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
@@ -41,7 +42,11 @@ func main() {
 	reversePtr := flag.Bool("reverse", false, "list values in reverse order")
 	acopyPtr := flag.String("acopy", "", "text to copy in alfred when item in filter is copied.  {{VALUE}} is replaced with the item value.")
 	aiconPtr := flag.String("aicon", "", "filename of icon to show in alfred for each item in filter. {{VALUE}} is replaced with item value.")
+	asubtitlePtr := flag.String("asubtitle", "", "subtitle to display for the item in alfred.  {{VALUE}} is replaced with the item value.")
+	atitle := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
+	aarg := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
 	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in both name and value.  Parameter can be specified multiple times for multiple variables.")
+	flag.Var(&alfredItemFlags, "aitem", "item json to include in alfred list. Parameter can be specified multiple times for multiple items")
 
 	flag.Parse()
 
@@ -103,7 +108,7 @@ func main() {
 		}
 
 		if *alfredPtr {
-			listAlfred(lines, *aiconPtr, *acopyPtr, alfredVarFlags)
+			listAlfred(lines, *aiconPtr, *acopyPtr, alfredVarFlags, *asubtitlePtr, alfredItemFlags, *atitle, *aarg)
 		} else {
 			listValues(lines)
 		}
@@ -114,22 +119,35 @@ func main() {
 	return
 }
 
-func listAlfred(values []string, iconFilename string, copyText string, alfredVars arrayFlags) {
+func listAlfred(values []string, iconFilename string, copyText string, alfredVars arrayFlags, subtitleText string, cannedItems arrayFlags, itemTitle string, itemArg string) {
 	fmt.Println("{\"items\": [")
-	for i, line := range values {
-		if i != 0 {
-			fmt.Print(",")
+
+	itemCount := 0
+	for _, item := range cannedItems {
+		if itemCount > 0 {
+			fmt.Println(",")
+		}
+		fmt.Printf("{%v}", item)
+		itemCount = itemCount + 1
+
+	}
+	for _, line := range values {
+		if itemCount > 0 {
+			fmt.Println(",")
 		}
 
-		fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\"", line, line)
+		fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\"", replacePlaceholder(itemTitle, "VALUE", line), replacePlaceholder(itemArg, "VALUE", line))
+		if subtitleText != "" {
+			fmt.Printf(", \"subtitle\": \"%v\"", replacePlaceholder(subtitleText, "VALUE", line))
+		}
 		if iconFilename != "" {
 			fmt.Print(", \"icon\": { \"path\": \"")
-			fmt.Print(strings.Replace(iconFilename, "{{VALUE}}", line, -1))
+			fmt.Print(replacePlaceholder(iconFilename, "VALUE", line))
 			fmt.Print("\"} ")
 		}
 		if copyText != "" {
 			fmt.Print(", \"text\": { \"copy\": \"")
-			fmt.Print(strings.Replace(copyText, "{{VALUE}}", line, -1))
+			fmt.Print(replacePlaceholder(copyText, "VALUE", line))
 			fmt.Print("\"} ")
 		}
 		if len(alfredVars) > 0 {
@@ -140,14 +158,20 @@ func listAlfred(values []string, iconFilename string, copyText string, alfredVar
 				}
 				parts := strings.Split(avar, "=")
 				if len(parts) == 2 {
-					fmt.Printf("\"%v\": \"%v\"", strings.Replace(parts[0], "{{VALUE}}", line, -1), strings.Replace(parts[1], "{{VALUE}}", line, -1))
+					fmt.Printf("\"%v\": \"%v\"", replacePlaceholder(parts[0], "VALUE", line), replacePlaceholder(parts[1], "VALUE", line))
 				}
 			}
 			fmt.Println("}")
 		}
-		fmt.Println("}")
+		fmt.Print("}")
+		itemCount = itemCount + 1
 	}
+	fmt.Println()
 	fmt.Println("]}")
+}
+
+func replacePlaceholder(input string, placeholder string, replacementValue string) string {
+	return strings.Replace(input, "{{"+placeholder+"}}", replacementValue, -1)
 }
 
 func listValues(values []string) {
