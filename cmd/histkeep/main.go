@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/bbeardsley/histkeep"
 )
@@ -39,9 +40,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	command := flag.Arg(0)
-	file := flag.Arg(1)
-	value := flag.Arg(2)
+	command := strings.TrimSpace(flag.Arg(0))
+	file := strings.TrimSpace(flag.Arg(1))
+	value := strings.TrimSpace(flag.Arg(2))
 
 	hist := histkeep.NewHistKeep(file, *lastNPtr)
 
