@@ -162,8 +162,7 @@ func listValues(values []string, filterFunc func(string) bool) {
 
 func buildFormat(formatStr string) *regexp.Regexp {
 	format := processedNamedFormats(formatStr)
-	regex, _ := regexp.Compile("^" + format + "$")
-	return regex
+	return regexp.MustCompile("^" + format + "$")
 }
 
 func processedNamedFormats(formatStr string) string {

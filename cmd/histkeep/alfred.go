@@ -27,12 +27,8 @@ func (a alfred) list() {
 	validFormat := a.format.MatchString(a.filter)
 	if a.filter == "" || !validFormat {
 		for _, item := range a.cannedItems {
-			if a.filterFunc(item) {
-				if itemCount > 0 {
-					fmt.Println(",")
-				}
-				fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
-				itemCount = itemCount + 1
+			if writeCannedItem(item, itemCount > 0, a.filterFunc) {
+				itemCount++
 			}
 		}
 	}
@@ -42,11 +38,9 @@ func (a alfred) list() {
 			a.values = append(a.values, a.filter)
 		} else if !validFormat {
 			for _, item := range a.cannedItems {
-				if itemCount > 0 {
-					fmt.Println(",")
+				if writeCannedItem(item, itemCount > 0, func(title string) bool { return true }) {
+					itemCount++
 				}
-				fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
-				itemCount = itemCount + 1
 			}
 		}
 	}
@@ -58,38 +52,87 @@ func (a alfred) list() {
 
 		fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\"", replacePlaceholder(a.itemTitle, "VALUE", line), replacePlaceholder(a.itemArg, "VALUE", line))
 		if a.itemSubtitle != "" {
-			fmt.Printf(", \"subtitle\": \"%v\"", replacePlaceholder(a.itemSubtitle, "VALUE", line))
+			fmt.Printf(",\"subtitle\": \"%v\"", replacePlaceholder(a.itemSubtitle, "VALUE", line))
 		}
 		if a.iconFilename != "" {
-			fmt.Print(", \"icon\": { \"path\": \"")
+			fmt.Print(",\"icon\": { \"path\": \"")
 			fmt.Print(replacePlaceholder(a.iconFilename, "VALUE", line))
 			fmt.Print("\"} ")
 		}
 		if a.copyText != "" {
-			fmt.Print(", \"text\": { \"copy\": \"")
+			fmt.Print(",\"text\": { \"copy\": \"")
 			fmt.Print(replacePlaceholder(a.copyText, "VALUE", line))
 			fmt.Print("\"} ")
 		}
 		if len(a.itemVars) > 0 {
-			fmt.Print(", \"variables\": {")
-			for i, avar := range a.itemVars {
-				if i != 0 {
-					fmt.Print(",")
-				}
-				parts := strings.Split(avar, "=")
-				if len(parts) == 2 {
-					fmt.Printf("\"%v\": \"%v\"", replacePlaceholder(parts[0], "VALUE", line), replacePlaceholder(parts[1], "VALUE", line))
+			fmt.Print(",\"variables\": {")
+			varCount := 0
+			for _, avar := range a.itemVars {
+				for varName, varValue := range mapNameValuePairs(avar) {
+					if varCount > 0 {
+						fmt.Print(",")
+					}
+					fmt.Printf("\"%v\": \"%v\"", varName, replacePlaceholder(varValue, "VALUE", line))
+					varCount++
 				}
 			}
-			fmt.Println("}")
+			fmt.Print("}")
 		}
 		fmt.Print("}")
-		itemCount = itemCount + 1
+		itemCount++
 	}
 	fmt.Println()
 	fmt.Println("]}")
 }
 
+func writeCannedItem(item string, isNotFirst bool, filterFunc func(string) bool) bool {
+	pairs := mapNameValuePairs(item)
+	if len(pairs) == 0 {
+		if filterFunc(item) {
+			if isNotFirst {
+				fmt.Println(",")
+			}
+			fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
+			return true
+		}
+	} else {
+		title, okTitle := pairs["title"]
+		if okTitle && filterFunc(title) {
+			arg, okArg := pairs["arg"]
+			if !okArg {
+				arg = strings.ToLower(title)
+			}
+			subtitle, okSubtitle := pairs["subtitle"]
+			if !okSubtitle {
+				subtitle = "Open " + arg
+			}
+			if isNotFirst {
+				fmt.Println(",")
+			}
+			fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"%v\"}", title, arg, subtitle)
+			return true
+		}
+	}
+	return false
+}
+
 func replacePlaceholder(input string, placeholder string, replacementValue string) string {
 	return strings.Replace(input, "{{"+placeholder+"}}", replacementValue, -1)
+}
+
+func mapNameValuePairs(input string) map[string]string {
+	m := make(map[string]string)
+
+	results := strings.Split(input, "||")
+	if results != nil {
+		for i := 0; i < len(results); i++ {
+			item := results[i]
+			parts := strings.SplitN(item, "=", 2)
+			if len(parts) == 2 {
+				m[parts[0]] = parts[1]
+			}
+		}
+	}
+
+	return m
 }
