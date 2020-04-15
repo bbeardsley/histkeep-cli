@@ -11,7 +11,7 @@ import (
 	"github.com/bbeardsley/histkeep"
 )
 
-const version = "0.0.5"
+const version = "0.0.6"
 
 func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage")
@@ -45,7 +45,7 @@ func main() {
 	atitlePtr := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
 	aargPtr := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
 	filterPtr := flag.String("filter", "", "regex filter")
-	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in both name and value.  Parameter can be specified multiple times for multiple variables.")
+	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in value.  Parameter can be specified multiple times for multiple variables.")
 	flag.Var(&alfredCannedItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
 
 	flag.Parse()
