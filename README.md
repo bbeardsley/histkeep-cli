@@ -10,7 +10,7 @@ Direct downloads are available through the [releases page](https://github.com/bb
 
 If you have Go installed on your computer just run `go get`.
 
-    go get github.com/bbeardsley/histkeep
+    go get github.com/bbeardsley/histkeep-cli
 
 ## usage
 
