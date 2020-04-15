@@ -31,7 +31,7 @@ func printUsage() {
 }
 
 var alfredVarFlags arrayFlags
-var alfredItemFlags arrayFlags
+var alfredCannedItemFlags arrayFlags
 
 func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
@@ -46,7 +46,7 @@ func main() {
 	aargPtr := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
 	filterPtr := flag.String("filter", "", "regex filter")
 	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in both name and value.  Parameter can be specified multiple times for multiple variables.")
-	flag.Var(&alfredItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
+	flag.Var(&alfredCannedItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
 
 	flag.Parse()
 
@@ -109,7 +109,20 @@ func main() {
 		}
 
 		if *alfredPtr {
-			listAlfred(lines, *aiconPtr, *acopyPtr, alfredVarFlags, *asubtitlePtr, alfredItemFlags, *atitlePtr, *aargPtr, *filterPtr, filterFunc, format)
+			a := alfred{
+				values:       lines,
+				itemTitle:    *atitlePtr,
+				itemArg:      *aargPtr,
+				itemSubtitle: *asubtitlePtr,
+				iconFilename: *aiconPtr,
+				copyText:     *acopyPtr,
+				itemVars:     alfredVarFlags,
+				cannedItems:  alfredCannedItemFlags,
+				filter:       *filterPtr,
+				filterFunc:   filterFunc,
+				format:       format,
+			}
+			a.list()
 		} else {
 			listValues(lines, filterFunc)
 		}
@@ -136,80 +149,6 @@ func buildFilterFunc(filter string) func(string) bool {
 		}
 	}
 	return filterFunc
-}
-
-func listAlfred(values []string, iconFilename string, copyText string, alfredVars arrayFlags, subtitleText string, cannedItems arrayFlags, itemTitle string, itemArg string, filter string, filterFunc func(string) bool, format *regexp.Regexp) {
-	fmt.Println("{\"items\": [")
-
-	itemCount := 0
-	validFormat := format.MatchString(filter)
-	if filter == "" || !validFormat {
-		for _, item := range cannedItems {
-			if filterFunc(item) {
-				if itemCount > 0 {
-					fmt.Println(",")
-				}
-				fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
-				itemCount = itemCount + 1
-			}
-		}
-	}
-
-	if len(values) == 0 && itemCount == 0 {
-		if filter != "" && validFormat {
-			values = append(values, filter)
-		} else if !validFormat {
-			for _, item := range cannedItems {
-				if itemCount > 0 {
-					fmt.Println(",")
-				}
-				fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
-				itemCount = itemCount + 1
-			}
-		}
-	}
-
-	for _, line := range values {
-		if itemCount > 0 {
-			fmt.Println(",")
-		}
-
-		fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\"", replacePlaceholder(itemTitle, "VALUE", line), replacePlaceholder(itemArg, "VALUE", line))
-		if subtitleText != "" {
-			fmt.Printf(", \"subtitle\": \"%v\"", replacePlaceholder(subtitleText, "VALUE", line))
-		}
-		if iconFilename != "" {
-			fmt.Print(", \"icon\": { \"path\": \"")
-			fmt.Print(replacePlaceholder(iconFilename, "VALUE", line))
-			fmt.Print("\"} ")
-		}
-		if copyText != "" {
-			fmt.Print(", \"text\": { \"copy\": \"")
-			fmt.Print(replacePlaceholder(copyText, "VALUE", line))
-			fmt.Print("\"} ")
-		}
-		if len(alfredVars) > 0 {
-			fmt.Print(", \"variables\": {")
-			for i, avar := range alfredVars {
-				if i != 0 {
-					fmt.Print(",")
-				}
-				parts := strings.Split(avar, "=")
-				if len(parts) == 2 {
-					fmt.Printf("\"%v\": \"%v\"", replacePlaceholder(parts[0], "VALUE", line), replacePlaceholder(parts[1], "VALUE", line))
-				}
-			}
-			fmt.Println("}")
-		}
-		fmt.Print("}")
-		itemCount = itemCount + 1
-	}
-	fmt.Println()
-	fmt.Println("]}")
-}
-
-func replacePlaceholder(input string, placeholder string, replacementValue string) string {
-	return strings.Replace(input, "{{"+placeholder+"}}", replacementValue, -1)
 }
 
 func listValues(values []string, filterFunc func(string) bool) {
