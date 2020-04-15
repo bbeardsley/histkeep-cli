@@ -6,13 +6,12 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/bbeardsley/histkeep"
 )
 
-const version = "0.0.4"
+const version = "0.0.5"
 
 func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage")
@@ -43,10 +42,11 @@ func main() {
 	acopyPtr := flag.String("acopy", "", "text to copy in alfred when item in filter is copied.  {{VALUE}} is replaced with the item value.")
 	aiconPtr := flag.String("aicon", "", "filename of icon to show in alfred for each item in filter. {{VALUE}} is replaced with item value.")
 	asubtitlePtr := flag.String("asubtitle", "", "subtitle to display for the item in alfred.  {{VALUE}} is replaced with the item value.")
-	atitle := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
-	aarg := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
+	atitlePtr := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
+	aargPtr := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
+	filterPtr := flag.String("filter", "", "regex filter")
 	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in both name and value.  Parameter can be specified multiple times for multiple variables.")
-	flag.Var(&alfredItemFlags, "aitem", "item json to include in alfred list. Parameter can be specified multiple times for multiple items")
+	flag.Var(&alfredItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
 
 	flag.Parse()
 
@@ -98,19 +98,20 @@ func main() {
 			printUsage()
 		}
 
-		lines, err := hist.GetValues()
+		filterFunc := buildFilterFunc(*filterPtr)
+		lines, err := hist.GetFilteredValues(filterFunc)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		if *reversePtr {
-			lines = reverseValues(lines)
+			lines = hist.ReverseValues(lines)
 		}
 
 		if *alfredPtr {
-			listAlfred(lines, *aiconPtr, *acopyPtr, alfredVarFlags, *asubtitlePtr, alfredItemFlags, *atitle, *aarg)
+			listAlfred(lines, *aiconPtr, *acopyPtr, alfredVarFlags, *asubtitlePtr, alfredItemFlags, *atitlePtr, *aargPtr, *filterPtr, filterFunc, format)
 		} else {
-			listValues(lines)
+			listValues(lines, filterFunc)
 		}
 	default:
 		printUsage()
@@ -119,18 +120,55 @@ func main() {
 	return
 }
 
-func listAlfred(values []string, iconFilename string, copyText string, alfredVars arrayFlags, subtitleText string, cannedItems arrayFlags, itemTitle string, itemArg string) {
+func buildFilterFunc(filter string) func(string) bool {
+	var filterFunc func(string) bool
+	if filter != "" {
+		filterRegex, err := regexp.Compile("^(?i)" + filter)
+		if err != nil {
+			log.Fatal(err)
+		}
+		filterFunc = func(line string) bool {
+			return filterRegex.MatchString(line)
+		}
+	} else {
+		filterFunc = func(line string) bool {
+			return true
+		}
+	}
+	return filterFunc
+}
+
+func listAlfred(values []string, iconFilename string, copyText string, alfredVars arrayFlags, subtitleText string, cannedItems arrayFlags, itemTitle string, itemArg string, filter string, filterFunc func(string) bool, format *regexp.Regexp) {
 	fmt.Println("{\"items\": [")
 
 	itemCount := 0
-	for _, item := range cannedItems {
-		if itemCount > 0 {
-			fmt.Println(",")
+	validFormat := format.MatchString(filter)
+	if filter == "" || !validFormat {
+		for _, item := range cannedItems {
+			if filterFunc(item) {
+				if itemCount > 0 {
+					fmt.Println(",")
+				}
+				fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
+				itemCount = itemCount + 1
+			}
 		}
-		fmt.Printf("{%v}", item)
-		itemCount = itemCount + 1
-
 	}
+
+	if len(values) == 0 && itemCount == 0 {
+		if filter != "" && validFormat {
+			values = append(values, filter)
+		} else if !validFormat {
+			for _, item := range cannedItems {
+				if itemCount > 0 {
+					fmt.Println(",")
+				}
+				fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
+				itemCount = itemCount + 1
+			}
+		}
+	}
+
 	for _, line := range values {
 		if itemCount > 0 {
 			fmt.Println(",")
@@ -174,7 +212,7 @@ func replacePlaceholder(input string, placeholder string, replacementValue strin
 	return strings.Replace(input, "{{"+placeholder+"}}", replacementValue, -1)
 }
 
-func listValues(values []string) {
+func listValues(values []string, filterFunc func(string) bool) {
 	for i, line := range values {
 		if i != 0 {
 			fmt.Println()
@@ -205,34 +243,10 @@ func processedNamedFormats(formatStr string) string {
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
-	return "my string representation"
+	return "array flags"
 }
 
 func (i *arrayFlags) Set(value string) error {
 	*i = append(*i, value)
 	return nil
-}
-
-type stringValue struct {
-	value string
-	index int
-}
-
-type byIndex []stringValue
-
-func (b byIndex) Len() int           { return len(b) }
-func (b byIndex) Less(i, j int) bool { return b[i].index < b[j].index }
-func (b byIndex) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
-
-func reverseValues(values []string) []string {
-	stringValues := make([]stringValue, 0)
-	for i := 0; i < len(values); i++ {
-		stringValues = append(stringValues, stringValue{values[i], i})
-	}
-	sort.Sort(sort.Reverse(byIndex(stringValues)))
-	items := make([]string, 0)
-	for i := 0; i < len(stringValues); i++ {
-		items = append(items, stringValues[i].value)
-	}
-	return items
 }
