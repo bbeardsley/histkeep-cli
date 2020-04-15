@@ -18,10 +18,26 @@ If you have Go installed on your computer just run `go get`.
 Usage
     histkeep [options] <command> <file> <command arguments...>
 Version
-    0.0.4
+    0.0.5
 Options
+  -aarg string
+    	item arg in alfred. {{VALUE}} is replaced with the item value. (default "{{VALUE}}")
+  -acopy string
+    	text to copy in alfred when item in filter is copied.  {{VALUE}} is replaced with the item value.
+  -aicon string
+    	filename of icon to show in alfred for each item in filter. {{VALUE}} is replaced with item value.
+  -aitem value
+    	item to include in alfred list. Parameter can be specified multiple times for multiple items
   -alfred
     	output Alfred JSON list
+  -asubtitle string
+    	subtitle to display for the item in alfred.  {{VALUE}} is replaced with the item value.
+  -atitle string
+    	item title in alfred. {{VALUE}} is replaced with the item value. (default "{{VALUE}}")
+  -avar value
+    	name=value to be passed to alfred.  {{VALUE}} is replaced with item value in both name and value.  Parameter can be specified multiple times for multiple variables.
+  -filter string
+    	regex filter
   -format string
     	regex format for the values.  Accepts NUMBER and UUID as shortcuts.
   -last int
