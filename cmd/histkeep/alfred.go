@@ -18,10 +18,19 @@ type alfred struct {
 	filter       string
 	filterFunc   func(string) bool
 	format       *regexp.Regexp
+	globalVars   arrayFlags
 }
 
 func (a alfred) list() {
-	fmt.Println("{\"items\": [")
+	fmt.Println("{")
+
+	gvars := buildVariables(a.globalVars, "")
+	if len(gvars) > 0 {
+		writeVariables(gvars)
+		fmt.Println(",")
+	}
+
+	fmt.Println("\"items\": [")
 
 	itemCount := 0
 	validFormat := a.format.MatchString(a.filter)
@@ -64,25 +73,44 @@ func (a alfred) list() {
 			fmt.Print(replacePlaceholder(a.copyText, "VALUE", line))
 			fmt.Print("\"} ")
 		}
-		if len(a.itemVars) > 0 {
-			fmt.Print(",\"variables\": {")
-			varCount := 0
-			for _, avar := range a.itemVars {
-				for varName, varValue := range mapNameValuePairs(avar) {
-					if varCount > 0 {
-						fmt.Print(",")
-					}
-					fmt.Printf("\"%v\": \"%v\"", varName, replacePlaceholder(varValue, "VALUE", line))
-					varCount++
-				}
-			}
-			fmt.Print("}")
+		ivars := buildVariables(a.itemVars, line)
+		if len(ivars) > 0 {
+			fmt.Print(",")
+			writeVariables(ivars)
 		}
+
 		fmt.Print("}")
 		itemCount++
 	}
 	fmt.Println()
-	fmt.Println("]}")
+	fmt.Println("]")
+
+	fmt.Println("}")
+}
+
+func buildVariables(vars arrayFlags, itemValue string) map[string]string {
+	m := make(map[string]string)
+	for _, avar := range vars {
+		for varName, varValue := range mapNameValuePairs(avar) {
+			m[varName] = replacePlaceholder(varValue, "VALUE", itemValue)
+		}
+	}
+
+	return m
+}
+
+func writeVariables(vars map[string]string) {
+	fmt.Print("\"variables\": {")
+
+	count := 0
+	for varName, varValue := range vars {
+		if count > 0 {
+			fmt.Print(",")
+		}
+		fmt.Printf("\"%v\": \"%v\"", varName, varValue)
+		count++
+	}
+	fmt.Print("}")
 }
 
 func writeCannedItem(item string, isNotFirst bool, filterFunc func(string) bool) bool {

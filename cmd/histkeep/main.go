@@ -30,7 +30,8 @@ func printUsage() {
 	os.Exit(1)
 }
 
-var alfredVarFlags arrayFlags
+var alfredGlobalVarFlags arrayFlags
+var alfredItemVarFlags arrayFlags
 var alfredCannedItemFlags arrayFlags
 
 func main() {
@@ -45,8 +46,9 @@ func main() {
 	atitlePtr := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
 	aargPtr := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
 	filterPtr := flag.String("filter", "", "regex filter")
-	flag.Var(&alfredVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in value.  Parameter can be specified multiple times for multiple variables.")
+	flag.Var(&alfredItemVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in value.  Parameter can be specified multiple times for multiple variables.")
 	flag.Var(&alfredCannedItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
+	flag.Var(&alfredGlobalVarFlags, "agvar", "name=value to be passed to alfred as a global variable.  Parameter can be specified multiple times for multiple variables.")
 
 	flag.Parse()
 
@@ -116,11 +118,12 @@ func main() {
 				itemSubtitle: *asubtitlePtr,
 				iconFilename: *aiconPtr,
 				copyText:     *acopyPtr,
-				itemVars:     alfredVarFlags,
+				itemVars:     alfredItemVarFlags,
 				cannedItems:  alfredCannedItemFlags,
 				filter:       *filterPtr,
 				filterFunc:   filterFunc,
 				format:       format,
+				globalVars:   alfredGlobalVarFlags,
 			}
 			a.list()
 		} else {
