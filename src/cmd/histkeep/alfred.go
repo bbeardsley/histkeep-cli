@@ -7,7 +7,6 @@ import (
 )
 
 type alfred struct {
-	values       []string
 	itemTitle    string
 	itemSubtitle string
 	itemArg      string
@@ -21,7 +20,7 @@ type alfred struct {
 	globalVars   arrayFlags
 }
 
-func (a alfred) list() {
+func (a alfred) list(values []string) {
 	fmt.Println("{")
 
 	gvars := buildVariables(a.globalVars, "")
@@ -42,9 +41,9 @@ func (a alfred) list() {
 		}
 	}
 
-	if len(a.values) == 0 && itemCount == 0 {
+	if len(values) == 0 && itemCount == 0 {
 		if a.filter != "" && validFormat {
-			a.values = append(a.values, a.filter)
+			values = append(values, a.filter)
 		} else if !validFormat {
 			for _, item := range a.cannedItems {
 				if writeCannedItem(item, itemCount > 0, func(title string) bool { return true }) {
@@ -54,7 +53,7 @@ func (a alfred) list() {
 		}
 	}
 
-	for _, line := range a.values {
+	for _, line := range values {
 		if itemCount > 0 {
 			fmt.Println(",")
 		}

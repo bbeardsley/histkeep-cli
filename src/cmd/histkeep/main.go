@@ -112,7 +112,6 @@ func main() {
 
 		if *alfredPtr {
 			a := alfred{
-				values:       lines,
 				itemTitle:    *atitlePtr,
 				itemArg:      *aargPtr,
 				itemSubtitle: *asubtitlePtr,
@@ -121,13 +120,12 @@ func main() {
 				itemVars:     alfredItemVarFlags,
 				cannedItems:  alfredCannedItemFlags,
 				filter:       *filterPtr,
-				filterFunc:   filterFunc,
 				format:       format,
 				globalVars:   alfredGlobalVarFlags,
 			}
-			a.list()
+			a.list(lines)
 		} else {
-			listValues(lines, filterFunc)
+			listValues(lines)
 		}
 	default:
 		printUsage()
@@ -154,7 +152,7 @@ func buildFilterFunc(filter string) func(string) bool {
 	return filterFunc
 }
 
-func listValues(values []string, filterFunc func(string) bool) {
+func listValues(values []string) {
 	for i, line := range values {
 		if i != 0 {
 			fmt.Println()
