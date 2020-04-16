@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
+
+	aw "github.com/deanishe/awgo"
 )
 
 type alfred struct {
@@ -21,70 +22,56 @@ type alfred struct {
 }
 
 func (a alfred) list(values []string) {
-	fmt.Println("{")
-
-	gvars := buildVariables(a.globalVars, "")
-	if len(gvars) > 0 {
-		writeVariables(gvars)
-		fmt.Println(",")
-	}
-
-	fmt.Println("\"items\": [")
-
-	itemCount := 0
-	validFormat := a.format.MatchString(a.filter)
-	if a.filter == "" || !validFormat {
-		for _, item := range a.cannedItems {
-			if writeCannedItem(item, itemCount > 0, a.filterFunc) {
-				itemCount++
-			}
+	wf := aw.New()
+	wf.Args()
+	wf.Run(func() {
+		for name, value := range buildVariables(a.globalVars, "") {
+			wf.Var(name, value)
 		}
-	}
 
-	if len(values) == 0 && itemCount == 0 {
-		if a.filter != "" && validFormat {
-			values = append(values, a.filter)
-		} else if !validFormat {
+		hasCanned := false
+		validFormat := a.format.MatchString(a.filter)
+		if a.filter == "" || !validFormat {
 			for _, item := range a.cannedItems {
-				if writeCannedItem(item, itemCount > 0, func(title string) bool { return true }) {
-					itemCount++
+				if writeCannedItem(wf, item, a.filterFunc) {
+					hasCanned = true
 				}
 			}
 		}
-	}
 
-	for _, line := range values {
-		if itemCount > 0 {
-			fmt.Println(",")
-		}
-
-		fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\"", replacePlaceholder(a.itemTitle, "VALUE", line), replacePlaceholder(a.itemArg, "VALUE", line))
-		if a.itemSubtitle != "" {
-			fmt.Printf(",\"subtitle\": \"%v\"", replacePlaceholder(a.itemSubtitle, "VALUE", line))
-		}
-		if a.iconFilename != "" {
-			fmt.Print(",\"icon\": { \"path\": \"")
-			fmt.Print(replacePlaceholder(a.iconFilename, "VALUE", line))
-			fmt.Print("\"} ")
-		}
-		if a.copyText != "" {
-			fmt.Print(",\"text\": { \"copy\": \"")
-			fmt.Print(replacePlaceholder(a.copyText, "VALUE", line))
-			fmt.Print("\"} ")
-		}
-		ivars := buildVariables(a.itemVars, line)
-		if len(ivars) > 0 {
-			fmt.Print(",")
-			writeVariables(ivars)
+		if len(values) == 0 && !hasCanned {
+			if a.filter != "" && validFormat {
+				values = append(values, a.filter)
+			} else if !validFormat {
+				for _, item := range a.cannedItems {
+					writeCannedItem(wf, item, func(title string) bool { return true })
+				}
+			}
 		}
 
-		fmt.Print("}")
-		itemCount++
-	}
-	fmt.Println()
-	fmt.Println("]")
+		for _, line := range values {
+			item := wf.NewItem(replacePlaceholder(a.itemTitle, "VALUE", line)).
+				Arg(replacePlaceholder(a.itemArg, "VALUE", line)).
+				Valid(true)
+			if a.itemSubtitle != "" {
+				item.Subtitle(replacePlaceholder(a.itemSubtitle, "VALUE", line))
+			}
+			if a.iconFilename != "" {
+				item.Icon(&aw.Icon{
+					Value: a.iconFilename,
+					Type:  aw.IconTypeImage,
+				})
+			}
+			if a.copyText != "" {
+				item.Copytext(replacePlaceholder(a.copyText, "VALUE", line))
+			}
+			for name, value := range buildVariables(a.itemVars, line) {
+				item.Var(name, value)
+			}
+		}
 
-	fmt.Println("}")
+		wf.SendFeedback()
+	})
 }
 
 func buildVariables(vars arrayFlags, itemValue string) map[string]string {
@@ -98,28 +85,11 @@ func buildVariables(vars arrayFlags, itemValue string) map[string]string {
 	return m
 }
 
-func writeVariables(vars map[string]string) {
-	fmt.Print("\"variables\": {")
-
-	count := 0
-	for varName, varValue := range vars {
-		if count > 0 {
-			fmt.Print(",")
-		}
-		fmt.Printf("\"%v\": \"%v\"", varName, varValue)
-		count++
-	}
-	fmt.Print("}")
-}
-
-func writeCannedItem(item string, isNotFirst bool, filterFunc func(string) bool) bool {
-	pairs := mapNameValuePairs(item)
+func writeCannedItem(wf *aw.Workflow, cannedItem string, filterFunc func(string) bool) bool {
+	pairs := mapNameValuePairs(cannedItem)
 	if len(pairs) == 0 {
-		if filterFunc(item) {
-			if isNotFirst {
-				fmt.Println(",")
-			}
-			fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"Open %v\"}", item, strings.ToLower(item), strings.ToLower(item))
+		if filterFunc(cannedItem) {
+			wf.NewItem(cannedItem).Arg(strings.ToLower(cannedItem)).Subtitle(strings.ToLower(cannedItem)).Valid(true)
 			return true
 		}
 	} else {
@@ -133,10 +103,7 @@ func writeCannedItem(item string, isNotFirst bool, filterFunc func(string) bool)
 			if !okSubtitle {
 				subtitle = "Open " + arg
 			}
-			if isNotFirst {
-				fmt.Println(",")
-			}
-			fmt.Printf("{\"title\": \"%v\",\"arg\": \"%v\", \"subtitle\": \"%v\"}", title, arg, subtitle)
+			wf.NewItem(title).Arg(arg).Subtitle(subtitle).Valid(true)
 			return true
 		}
 	}

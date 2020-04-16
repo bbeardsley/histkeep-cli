@@ -120,6 +120,7 @@ func main() {
 				itemVars:     alfredItemVarFlags,
 				cannedItems:  alfredCannedItemFlags,
 				filter:       *filterPtr,
+				filterFunc:   filterFunc,
 				format:       format,
 				globalVars:   alfredGlobalVarFlags,
 			}
