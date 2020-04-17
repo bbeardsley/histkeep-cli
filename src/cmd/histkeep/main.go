@@ -46,6 +46,8 @@ func main() {
 	atitlePtr := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
 	aargPtr := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
 	filterPtr := flag.String("filter", "", "regex filter")
+	valuePtr := flag.String("value", "{{VALUE}}", "transforms the value before passing it on.")
+	ansiPtr := flag.Bool("ansi", false, "support ansi colors in value transformation")
 	flag.Var(&alfredItemVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in value.  Parameter can be specified multiple times for multiple variables.")
 	flag.Var(&alfredCannedItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
 	flag.Var(&alfredGlobalVarFlags, "agvar", "name=value to be passed to alfred as a global variable.  Parameter can be specified multiple times for multiple variables.")
@@ -110,19 +112,26 @@ func main() {
 			lines = hist.ReverseValues(lines)
 		}
 
+		lines = replaceAllPlaceholders(lines, *valuePtr, "VALUE")
+
+		if *ansiPtr {
+			lines = handleAnsiCodes(lines)
+		}
+
 		if *alfredPtr {
 			a := alfred{
-				itemTitle:    *atitlePtr,
-				itemArg:      *aargPtr,
-				itemSubtitle: *asubtitlePtr,
-				iconFilename: *aiconPtr,
-				copyText:     *acopyPtr,
-				itemVars:     alfredItemVarFlags,
-				cannedItems:  alfredCannedItemFlags,
-				filter:       *filterPtr,
-				filterFunc:   filterFunc,
-				format:       format,
-				globalVars:   alfredGlobalVarFlags,
+				itemTitle:          *atitlePtr,
+				itemArg:            *aargPtr,
+				itemSubtitle:       *asubtitlePtr,
+				iconFilename:       *aiconPtr,
+				copyText:           *acopyPtr,
+				itemVars:           alfredItemVarFlags,
+				cannedItems:        alfredCannedItemFlags,
+				filter:             *filterPtr,
+				filterFunc:         filterFunc,
+				format:             format,
+				globalVars:         alfredGlobalVarFlags,
+				replacePlaceholder: replacePlaceholder,
 			}
 			a.list(lines)
 		} else {
@@ -133,6 +142,27 @@ func main() {
 	}
 
 	return
+}
+
+func replaceAllPlaceholders(values []string, template string, placeholder string) []string {
+	replaced := make([]string, len(values))
+	for i, line := range values {
+		replaced[i] = replacePlaceholder(template, placeholder, line)
+	}
+	return replaced
+}
+
+func handleAnsiCodes(values []string) []string {
+	re := regexp.MustCompile("(?i)\\\\(e|033|x1b)")
+	replaced := make([]string, len(values))
+	for i, line := range values {
+		replaced[i] = re.ReplaceAllString(line, "\x1B")
+	}
+	return replaced
+}
+
+func replacePlaceholder(input string, placeholder string, replacementValue string) string {
+	return strings.Replace(input, "{{"+placeholder+"}}", replacementValue, -1)
 }
 
 func buildFilterFunc(filter string) func(string) bool {

@@ -8,24 +8,25 @@ import (
 )
 
 type alfred struct {
-	itemTitle    string
-	itemSubtitle string
-	itemArg      string
-	iconFilename string
-	copyText     string
-	itemVars     arrayFlags
-	cannedItems  arrayFlags
-	filter       string
-	filterFunc   func(string) bool
-	format       *regexp.Regexp
-	globalVars   arrayFlags
+	itemTitle          string
+	itemSubtitle       string
+	itemArg            string
+	iconFilename       string
+	copyText           string
+	itemVars           arrayFlags
+	cannedItems        arrayFlags
+	filter             string
+	filterFunc         func(string) bool
+	format             *regexp.Regexp
+	globalVars         arrayFlags
+	replacePlaceholder func(string, string, string) string
 }
 
 func (a alfred) list(values []string) {
 	wf := aw.New()
 	wf.Args()
 	wf.Run(func() {
-		for name, value := range buildVariables(a.globalVars, "") {
+		for name, value := range buildVariables(a.globalVars, "", a.replacePlaceholder) {
 			wf.Var(name, value)
 		}
 
@@ -50,11 +51,11 @@ func (a alfred) list(values []string) {
 		}
 
 		for _, line := range values {
-			item := wf.NewItem(replacePlaceholder(a.itemTitle, "VALUE", line)).
-				Arg(replacePlaceholder(a.itemArg, "VALUE", line)).
+			item := wf.NewItem(a.replacePlaceholder(a.itemTitle, "VALUE", line)).
+				Arg(a.replacePlaceholder(a.itemArg, "VALUE", line)).
 				Valid(true)
 			if a.itemSubtitle != "" {
-				item.Subtitle(replacePlaceholder(a.itemSubtitle, "VALUE", line))
+				item.Subtitle(a.replacePlaceholder(a.itemSubtitle, "VALUE", line))
 			}
 			if a.iconFilename != "" {
 				item.Icon(&aw.Icon{
@@ -63,9 +64,9 @@ func (a alfred) list(values []string) {
 				})
 			}
 			if a.copyText != "" {
-				item.Copytext(replacePlaceholder(a.copyText, "VALUE", line))
+				item.Copytext(a.replacePlaceholder(a.copyText, "VALUE", line))
 			}
-			for name, value := range buildVariables(a.itemVars, line) {
+			for name, value := range buildVariables(a.itemVars, line, a.replacePlaceholder) {
 				item.Var(name, value)
 			}
 		}
@@ -74,7 +75,7 @@ func (a alfred) list(values []string) {
 	})
 }
 
-func buildVariables(vars arrayFlags, itemValue string) map[string]string {
+func buildVariables(vars arrayFlags, itemValue string, replacePlaceholder func(string, string, string) string) map[string]string {
 	m := make(map[string]string)
 	for _, avar := range vars {
 		for varName, varValue := range mapNameValuePairs(avar) {
@@ -108,10 +109,6 @@ func writeCannedItem(wf *aw.Workflow, cannedItem string, filterFunc func(string)
 		}
 	}
 	return false
-}
-
-func replacePlaceholder(input string, placeholder string, replacementValue string) string {
-	return strings.Replace(input, "{{"+placeholder+"}}", replacementValue, -1)
 }
 
 func mapNameValuePairs(input string) map[string]string {
