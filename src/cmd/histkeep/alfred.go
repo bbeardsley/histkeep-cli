@@ -20,6 +20,7 @@ type alfred struct {
 	format             *regexp.Regexp
 	globalVars         arrayFlags
 	replacePlaceholder func(string, string, string) string
+	itemModifiers      arrayFlags
 }
 
 func (a alfred) list(values []string) {
@@ -69,10 +70,60 @@ func (a alfred) list(values []string) {
 			for name, value := range buildVariables(a.itemVars, line, a.replacePlaceholder) {
 				item.Var(name, value)
 			}
+
+			for modifier, modifierValues := range buildModifiers(a.itemModifiers) {
+				var mod *aw.Modifier
+				switch modifier {
+				case "alt":
+					mod = item.Alt().Valid(true)
+				case "cmd":
+					mod = item.Cmd().Valid(true)
+				case "ctrl":
+					mod = item.Ctrl().Valid(true)
+				case "fn":
+					mod = item.Fn().Valid(true)
+				default:
+					mod = nil
+				}
+				if mod != nil {
+					for name, value := range modifierValues {
+						switch name {
+						case "arg":
+							mod.Arg(a.replacePlaceholder(value, "VALUE", line))
+						case "icon":
+							mod.Icon(&aw.Icon{
+								Value: value,
+								Type:  aw.IconTypeImage,
+							})
+						case "subtitle":
+							mod.Subtitle(a.replacePlaceholder(value, "VALUE", line))
+						case "var":
+							for varName, varValue := range mapNameValuePairs(value) {
+								mod.Var(varName, a.replacePlaceholder(varValue, "VALUE", line))
+							}
+						}
+					}
+				}
+
+			}
 		}
 
 		wf.SendFeedback()
 	})
+}
+
+func buildModifiers(modifierFlags arrayFlags) map[string]map[string]string {
+	modifiers := make(map[string]map[string]string)
+	for _, modifier := range modifierFlags {
+		parts := strings.SplitN(modifier, ":", 3)
+		if len(parts) == 3 {
+			if modifiers[parts[0]] == nil {
+				modifiers[parts[0]] = make(map[string]string)
+			}
+			modifiers[parts[0]][parts[1]] = parts[2]
+		}
+	}
+	return modifiers
 }
 
 func buildVariables(vars arrayFlags, itemValue string, replacePlaceholder func(string, string, string) string) map[string]string {

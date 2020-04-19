@@ -33,6 +33,7 @@ func printUsage() {
 var alfredGlobalVarFlags arrayFlags
 var alfredItemVarFlags arrayFlags
 var alfredCannedItemFlags arrayFlags
+var alfredModItemFlags arrayFlags
 
 func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
@@ -51,6 +52,7 @@ func main() {
 	flag.Var(&alfredItemVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in value.  Parameter can be specified multiple times for multiple variables.")
 	flag.Var(&alfredCannedItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
 	flag.Var(&alfredGlobalVarFlags, "agvar", "name=value to be passed to alfred as a global variable.  Parameter can be specified multiple times for multiple variables.")
+	flag.Var(&alfredModItemFlags, "amod", "(alt|cmd|ctrl|fn):(var|valid|arg|subtitle|icon):(value|name=value)")
 
 	flag.Parse()
 
@@ -132,6 +134,7 @@ func main() {
 				format:             format,
 				globalVars:         alfredGlobalVarFlags,
 				replacePlaceholder: replacePlaceholder,
+				itemModifiers:      alfredModItemFlags,
 			}
 			a.list(lines)
 		} else {
