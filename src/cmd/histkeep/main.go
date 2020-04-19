@@ -11,7 +11,7 @@ import (
 	"github.com/bbeardsley/histkeep"
 )
 
-const version = "0.0.6"
+const version = "0.0.7"
 
 func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage")
