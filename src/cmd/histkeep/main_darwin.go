@@ -1,4 +1,4 @@
-// +build !darwin
+// +build darwin
 
 package main
 
@@ -32,6 +32,11 @@ func printUsage() {
 	os.Exit(1)
 }
 
+var alfredGlobalVarFlags arrayFlags
+var alfredItemVarFlags arrayFlags
+var alfredCannedItemFlags arrayFlags
+var alfredModItemFlags arrayFlags
+
 func main() {
 	lastNPtr := flag.Int("last", 15, "keep the last specified number of values")
 	formatPtr := flag.String("format", "", "regex format for the values.  Accepts NUMBER and UUID as shortcuts.")
@@ -40,6 +45,17 @@ func main() {
 	valuePtr := flag.String("value", "{{VALUE}}", "transforms the value before passing it on.")
 	ansiPtr := flag.Bool("ansi", false, "support ansi colors in value transformation")
 	reversePtr := flag.Bool("reverse", false, "list values in reverse order")
+
+	alfredPtr := flag.Bool("alfred", false, "output Alfred JSON list")
+	acopyPtr := flag.String("acopy", "", "text to copy in alfred when item in filter is copied.  {{VALUE}} is replaced with the item value.")
+	aiconPtr := flag.String("aicon", "", "filename of icon to show in alfred for each item in filter. {{VALUE}} is replaced with item value.")
+	asubtitlePtr := flag.String("asubtitle", "", "subtitle to display for the item in alfred.  {{VALUE}} is replaced with the item value.")
+	atitlePtr := flag.String("atitle", "{{VALUE}}", "item title in alfred. {{VALUE}} is replaced with the item value.")
+	aargPtr := flag.String("aarg", "{{VALUE}}", "item arg in alfred. {{VALUE}} is replaced with the item value.")
+	flag.Var(&alfredItemVarFlags, "avar", "name=value to be passed to alfred.  {{VALUE}} is replaced with item value in value.  Parameter can be specified multiple times for multiple variables.")
+	flag.Var(&alfredCannedItemFlags, "aitem", "item to include in alfred list. Parameter can be specified multiple times for multiple items")
+	flag.Var(&alfredGlobalVarFlags, "agvar", "name=value to be passed to alfred as a global variable.  Parameter can be specified multiple times for multiple variables.")
+	flag.Var(&alfredModItemFlags, "amod", "(alt|cmd|ctrl|fn):(var|valid|arg|subtitle|icon):(value|name=value)")
 
 	flag.Parse()
 
@@ -107,7 +123,26 @@ func main() {
 			lines = handleAnsiCodes(lines)
 		}
 
-		listValues(lines)
+		if *alfredPtr {
+			a := alfred{
+				itemTitle:          *atitlePtr,
+				itemArg:            *aargPtr,
+				itemSubtitle:       *asubtitlePtr,
+				iconFilename:       *aiconPtr,
+				copyText:           *acopyPtr,
+				itemVars:           alfredItemVarFlags,
+				cannedItems:        alfredCannedItemFlags,
+				filter:             *filterPtr,
+				filterFunc:         filterFunc,
+				format:             format,
+				globalVars:         alfredGlobalVarFlags,
+				replacePlaceholder: replacePlaceholder,
+				itemModifiers:      alfredModItemFlags,
+			}
+			a.list(lines)
+		} else {
+			listValues(lines)
+		}
 	default:
 		printUsage()
 	}
