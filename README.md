@@ -18,7 +18,7 @@ If you have Go installed on your computer just run `go get`.
 Usage
     histkeep [options] <command> <file> <command arguments...>
 Version
-    0.0.7
+    0.0.8
 Options
   -aarg string
     	item arg in alfred. {{VALUE}} is replaced with the item value. (default "{{VALUE}}")
