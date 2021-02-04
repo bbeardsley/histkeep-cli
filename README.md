@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-history manager keeps of history of values in a flat file and helps you manage them
+history manager keeps a mru history of values in a flat file and helps you manage them
 
 ## install
 
