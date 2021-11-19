@@ -6,7 +6,7 @@ history manager keeps a mru history of values in a flat file and helps you manag
 
 ## install
 
-Direct downloads are available through the [releases page](https://github.com/bbeardsley/histkeep/releases/latest).
+Direct downloads are available through the [releases page](https://github.com/bbeardsley/histkeep-cli/releases/latest).
 
 If you have Go installed on your computer just run `go get`.
 
