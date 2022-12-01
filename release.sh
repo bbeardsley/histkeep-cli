@@ -2,7 +2,7 @@
 
 set -e
 
-version=$(cat src/cmd/histkeep/main.go | grep "^const version = " | sed 's/^const version = "//;s/"$//')
+version=$(cat src/cmd/histkeep-cli/main.go | grep "^const version = " | sed 's/^const version = "//;s/"$//')
 package="histkeep"
 bin="histkeep"
 repo="https://github.com/bbeardsley/histkeep-cli"
@@ -18,7 +18,7 @@ platforms=(
 
 rm -f dist/*
 
-cd src/cmd/histkeep
+cd src/cmd/histkeep-cli
 for platform in "${platforms[@]}"
 do
   platform_split=(${platform//\// })
