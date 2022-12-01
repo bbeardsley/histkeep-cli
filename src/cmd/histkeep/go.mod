@@ -4,5 +4,5 @@ go 1.15
 
 require (
 	github.com/bbeardsley/histkeep v0.0.5
-	github.com/deanishe/awgo v0.27.1
+	github.com/deanishe/awgo v0.29.1
 )
