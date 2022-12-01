@@ -20,7 +20,7 @@ If you have Go installed on your computer just run `go install`.
 Usage
     histkeep [options] <command> <file> <command arguments...>
 Version
-    0.0.8
+    0.0.9
 Options
   -aarg string
     	item arg in alfred. {{VALUE}} is replaced with the item value. (default "{{VALUE}}")
