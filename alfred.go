@@ -1,3 +1,4 @@
+//go:build darwin
 // +build darwin
 
 package main
@@ -169,7 +170,7 @@ func mapNameValuePairs(input string) map[string]string {
 
 	results := strings.Split(input, "||")
 	if results != nil {
-		for i := 0; i < len(results); i++ {
+		for i := range results {
 			item := results[i]
 			parts := strings.SplitN(item, "=", 2)
 			if len(parts) == 2 {

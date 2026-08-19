@@ -1,6 +1,6 @@
 module github.com/bbeardsley/histkeep-cli
 
-go 1.26
+go 1.27
 
 require (
 	github.com/bbeardsley/histkeep v0.0.5
